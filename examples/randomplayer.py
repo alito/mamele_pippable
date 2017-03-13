@@ -36,12 +36,16 @@ def main(args):
     change_probability = 1. / ChangeActionPeriod
     action = [random.choice(action_set[1]) for action_set in action_sets]
 
+    
+    frame_count = 0
     while True:
         if game.is_game_over():
             count += 1
             if parameters.number_of_games and count > parameters.number_of_games:
                 break
             game.restart_game()
+
+        frame_count += 1
 
         if random.random() < change_probability:
             action = [random.choice(action_set[1]) for action_set in action_sets]

@@ -11,7 +11,7 @@ import logging
 sys.path.insert(0, '.')
 from connection import Socket
 
-def le_get_functions(args, game_name, width, height, buttons_used):
+def le_get_functions(args):
     """
     This function has to be called le_get_functions
 
@@ -21,8 +21,8 @@ def le_get_functions(args, game_name, width, height, buttons_used):
     agent input, and the function to be called when MAME shuts down.  Any of them can be set to None if you don't
     want to be notified of that event type.
     """
-    state = PassthroughController(game_name, width, height, buttons_used[:], args)
-    return (state.update, state.get_actions, state.should_we_reset, state.shutdown, None)
+    state = PassthroughController(args)
+    return (state.start, state.update, state.get_actions, state.should_we_reset, state.shutdown, None)
 
 
 
@@ -33,12 +33,7 @@ class PassthroughController(object):
         """
 
 
-    def __init__(self, game_name, width, height, buttons_used, args):
-        self.game_name = game_name
-        self.width = width
-        self.height = height
-        self.buttons_used = buttons_used
-
+    def __init__(self, args):
         # some useful constants
         left_arrow_button = Button(0)       
         right_arrow_button = Button(1)
@@ -81,6 +76,13 @@ class PassthroughController(object):
         socket_path = args
         self.controller_connection = Socket()
         self.controller_connection.start_client(socket_path)
+
+
+    def start(self, game_name, width, height, buttons_used):
+        self.game_name = game_name
+        self.width = width
+        self.height = height
+        self.buttons_used = buttons_used
 
         # send dimensions
         self.controller_connection.send("size %sx%s\n" % (self.width, self.height))
