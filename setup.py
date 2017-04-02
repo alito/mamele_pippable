@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import multiprocessing
 import os
 import subprocess
@@ -25,16 +27,16 @@ class Build(DistutilsBuild):
     def run(self):
         cores_to_use = min(MaxCPUs, max(1, multiprocessing.cpu_count() - 1))
 
-        print("Compiling MAME, this takes a while")
+        print("Compiling MAME, this takes a while", file=sys.stderr)
         # Compile main MAME
         cmd = ['make', '-C', mame_binary_directory, '-j', str(cores_to_use)]
         try:
             subprocess.check_call(cmd)
         except subprocess.CalledProcessError as e:
-            sys.stderr.write("Could not build mamele: %s.\n" % e)
+            print("Could not build mamele: %s." % e, file=sys.stderr)
             raise
         except OSError as e:
-            sys.stderr.write("Unable to execute '{}'. HINT: are you sure `make` is installed?\n".format(' '.join(cmd)))
+            print("Unable to execute '{}'. HINT: are you sure `make` is installed?".format(' '.join(cmd)), file=sys.stderr)
             raise
 
         # Compile Python bindings
@@ -42,10 +44,10 @@ class Build(DistutilsBuild):
         try:
             subprocess.check_call(cmd)
         except subprocess.CalledProcessError as e:
-            sys.stderr.write("Could not build mamele's Python bindings: %s.\n" % e)
+            print("Could not build mamele's Python bindings: %s." % e, file=sys.stderr)
             raise
         except OSError as e:
-            sys.stderr.write("Unable to execute '{}'. HINT: are you sure `make` is installed?\n".format(' '.join(cmd)))
+            print("Unable to execute '{}'. HINT: are you sure `make` is installed?\n".format(' '.join(cmd)), file=sys.stderr)
             raise
 
         DistutilsBuild.run(self)
@@ -53,7 +55,7 @@ class Build(DistutilsBuild):
 class Install(SetuptoolsInstall):
     def run(self):
         SetuptoolsInstall.run(self)
-        print("Put your ROMs under ~/.le/roms or make that directory a link to your ROM collection")
+        print("Put your ROMs under ~/.le/roms or make that directory a link to your ROM collection", file=sys.stderr)
 
 
 
