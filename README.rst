@@ -10,3 +10,21 @@ to another section of the same process.
 
 You need to put your roms under ~/.le/roms or to make that a link to your ROM collection for them to be
 available.
+
+
+
+Common installation issues
+--------------------------
+
+### pip install "hangs"
+
+It probably isn't hanging. It just takes a long time (ie many hours). It is compiling mame.
+Run it in verbose mode (-v) to see what it's doing
+
+### pip install fails
+
+If you run it with -v, you should be able to scroll up to try to find what failed. pip install compiles 
+mame, so you'll likely need quite a few dev packages. For Ubuntu, you'll need at least mesa-common-dev 
+and libsdl2-ttf-dev. This last one will pull in a lot of other required dependencies.
+
+
