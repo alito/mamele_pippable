@@ -9,7 +9,7 @@ since the data is transferred through a pipe between processes, instead of it be
 to another section of the same process.
 
 You need to put your roms under ~/.le/roms or to make that a link to your ROM collection for them to be
-available. Some ROMs are available from .. _the MAME Dev page: http://mamedev.org/roms/
+available. Some ROMs are available from the MAME Dev page: http://mamedev.org/roms/
 
 
 
