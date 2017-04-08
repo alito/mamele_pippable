@@ -60,7 +60,7 @@ class Install(SetuptoolsInstall):
 
 
 setup(name='mamele',
-      version='0.4.0.183',
+      version='0.4.1.183',
       description='Python bindings to MAME games',
       long_description='This is a Python wrapper around mamele, a framework for putting computer programs as players of games supported by MAME',
       url='https://github.com/alito/mamele_pippable',
@@ -80,6 +80,7 @@ setup(name='mamele',
       ],
       packages=['mamele'],
       package_data={ 'mamele' : package_data },
+      data_files=[('share/mamele/examples', ['examples/randomplayer.py'])],
       cmdclass={'build': Build, 'install' : Install},
       install_requires=['numpy', 'pillow'],
       zip_safe=False,
