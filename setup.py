@@ -8,6 +8,7 @@ from distutils.command.build import build as DistutilsBuild
 
 from setuptools import setup
 from setuptools.command.install import install as SetuptoolsInstall
+from setuptools.command.sdist import sdist as SetuptoolsSdist
 
 MaxCPUs = 4
 
@@ -58,6 +59,12 @@ class Install(SetuptoolsInstall):
         print("Put your ROMs under ~/.le/roms or make that directory a link to your ROM collection", file=sys.stderr)
 
 
+class Sdist(SetuptoolsSdist):
+    def make_distribution(self):
+        # Exclude the binaries
+        self.filelist.exclude_pattern('mamele/mamele_src/mame64')
+        self.filelist.exclude_pattern('mamele_src/learning_environment/example_agents/pythonbinding.so')
+        SetuptoolsSdist.make_distribution(self)
 
 setup(name='mamele',
       version='0.4.1.183',
@@ -81,7 +88,7 @@ setup(name='mamele',
       packages=['mamele'],
       package_data={ 'mamele' : package_data },
       data_files=[('share/mamele/examples', ['examples/randomplayer.py'])],
-      cmdclass={'build': Build, 'install' : Install},
+      cmdclass={'build': Build, 'install' : Install, 'sdist' : Sdist},
       install_requires=['numpy', 'pillow'],
       zip_safe=False,
       tests_require=[],
