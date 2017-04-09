@@ -146,8 +146,8 @@ class PassthroughController(object):
 
         # tell Gym that we are shutting down
 
-        self.socket.send("quit")
-        self.socket.destroy()
+        self.controller_connection.send("quit")
+        self.controller_connection.destroy()
     
     
     def receive_message(self):
@@ -168,6 +168,7 @@ class PassthroughController(object):
                 self.frames_to_skip = int(skip_description.strip())
             elif command == 'quit':
                 logging.info("We've been told to quit")
+                self.controller_connection.destroy()
                 sys.exit(0)                
         except self.CommunicationError as error:
             logging.error("Something went wrong talking to mamele: %s" % error)

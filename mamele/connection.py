@@ -39,6 +39,9 @@ class Socket(object):
 
 
     def wait_for_connection(self):
+        """
+        Server-side wait for a connection
+        """
         self.connection, _ = self.socket.accept()
 
     def receive_until_character(self, stopper):
@@ -102,10 +105,12 @@ class Socket(object):
 
 
     def destroy(self):
-        self.socket.shutdown(socket.SHUT_RDWR)
-        self.socket.close()
+        self.connection.shutdown(socket.SHUT_RDWR)
+        self.connection.close()
 
         if self._we_created:
+            self.socket.shutdown(socket.SHUT_RDWR)
+            self.socket.close()            
             try:
                 os.remove(self.socket_path)
                 os.rmdir(os.path.dirname(self.socket_path))

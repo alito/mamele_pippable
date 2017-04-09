@@ -51,7 +51,7 @@ def main(args):
             action = [random.choice(action_set[1]) for action_set in action_sets]
         game.act(action)
 
-    game.expected_quit()
+    game.quit()
 
     return 0
 

@@ -167,6 +167,9 @@ class Mamele(object):
         raise IOError("Could not connect to our module in mamele land")
 
 
+    def quit(self):
+        self.send_message('quit')
+
     def insert_coin(self):
         self.send_message("inpt %s\n" % self.action_to_description['coin'])
 
