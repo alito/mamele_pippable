@@ -279,12 +279,12 @@ class Mamele(object):
         passthrough_module = os.path.join(this_directory, 'passthrough')
 
         # mame is one down, the python bindings are three down
-        mame_binary = os.path.join(this_directory, 'mamele_src', 'mame64')
-        description_directory = os.path.join(this_directory, 'mamele_src', 'learning_environment')
+        mame_binary = os.path.join(this_directory, 'mamele_real', 'mame64')
+        description_directory = os.path.join(this_directory, 'mamele_real', 'learning_environment')
         roms_directory = os.path.join(os.path.expanduser("~"), '.le', 'roms')
         if not os.path.isdir(roms_directory):
             raise ValueError("'%s' is not a directory. Put your roms there" % roms_directory)            
-        python_bindings = os.path.join(this_directory, 'mamele_src', 'learning_environment', 'example_agents', 'pythonbinding.so')
+        python_bindings = os.path.join(this_directory, 'mamele_real', 'learning_environment', 'example_agents', 'pythonbinding.so')
 
         command = [mame_binary, game, '-nowriteconfig', '-noreadconfig', '-window'] 
         if not self.watch:

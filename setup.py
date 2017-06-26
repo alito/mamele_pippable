@@ -10,27 +10,73 @@ from setuptools import setup
 from setuptools.command.install import install as SetuptoolsInstall
 from setuptools.command.sdist import sdist as SetuptoolsSdist
 
+# The makefile used in the mamele package isn't quite correct I think, 
+# so having a high level of concurrency in the build process sometimes 
+# leads it to fail
 MaxCPUs = 4
 
+# tag to request
+mamele_version = 'v4.2.183'
+
 current_directory = os.path.dirname(__file__)
-bindings_directory = os.path.join(current_directory, 'mamele', 'mamele_src', 'learning_environment', 'example_agents')
-mame_binary_directory = os.path.join(current_directory, 'mamele', 'mamele_src')
+module_directory = os.path.join(current_directory, 'mamele')
+mamele_versioned = os.path.join(module_directory, 'mamele_%s' % mamele_version)
+mamele_base_directory = os.path.join(module_directory, 'mamele_real')
+bindings_directory = os.path.join(mamele_base_directory, 'learning_environment', 'example_agents')
+description_file_directory = os.path.join(mamele_base_directory, 'learning_environment')
+mame_binary_directory = mamele_base_directory
+
+def module_relative(path):
+    return os.path.relpath(path, module_directory)
 
 package_data = [
-    'mamele_src/mame64',
-    'mamele_src/learning_environment/example_agents/pythonbinding.so',
-    'mamele_src/learning_environment/gameover_description.txt',
-    'mamele_src/learning_environment/score_description.txt',
+    module_relative(os.path.join(mamele_base_directory, 'mame64')),
+    module_relative(os.path.join(bindings_directory, 'pythonbinding.so')),
+    module_relative(os.path.join(description_file_directory, 'gameover_description.txt')),
+    module_relative(os.path.join(description_file_directory, 'score_description.txt')),
     ]
 
 
 class Build(DistutilsBuild):
     def run(self):
+
+        # Do a checkout of the relevant mamele directory and compile it
+        # Ugly af I know, but the combination of PyPI's 60MB limit and pip's
+        # increasing reticence to installing anything from outside of PyPI
+        # don't leave me many choices.
+        # If you know of a way around it, please tell. The main requirement
+        # is that 'pip install <name>' should work where name can be 
+        # 'mamele' or some URL, and that 'pip install .[mame]' work from gym
+        # (https://github.com/openai/gym)
+
+        if not os.path.exists(mamele_versioned):
+            # do a shallow clone
+            git_command = ['git', 'clone', '-b', mamele_version, '--depth', '1', 'https://github.com/alito/mamele.git', mamele_versioned]
+            try:
+                subprocess.check_call(git_command)
+            except subprocess.CalledProcessError as e:
+                print("Could not do a git clone of the mamele source: %s." % e, file=sys.stderr)
+                raise
+            except OSError as e:
+                print("Unable to execute '{}'. You need to have a working 'git' command for this to work".format(" ".join(git_command)), file=sys.stderr)
+                raise
+
+        if os.path.lexists(mamele_base_directory):
+            if os.path.islink(mamele_base_directory) and not os.path.abspath(os.readlink(mamele_base_directory)) != os.path.abspath(mamele_versioned):
+                # Assume we are pointing to an outdated version
+                # Remove and relink
+                os.remove(mamele_base_directory)
+                os.symlink(os.path.relpath(mamele_versioned, os.path.dirname(mamele_base_directory)), mamele_base_directory)
+            # if it is not a link, we can assume the user knows better
+        else:
+            os.symlink(os.path.relpath(mamele_versioned, os.path.dirname(mamele_base_directory)), mamele_base_directory)
+
+
         cores_to_use = min(MaxCPUs, max(1, multiprocessing.cpu_count() - 1))
 
         print("Compiling MAME, this takes a while", file=sys.stderr)
         # Compile main MAME
-        cmd = ['make', '-C', mame_binary_directory, '-j', str(cores_to_use)]
+        cmd = ['make', '-C', mamele_base_directory, '-j', str(cores_to_use)]
         try:
             subprocess.check_call(cmd)
         except subprocess.CalledProcessError as e:
@@ -58,20 +104,23 @@ class Install(SetuptoolsInstall):
         SetuptoolsInstall.run(self)
         print("Put your ROMs under ~/.le/roms or make that directory a link to your ROM collection", file=sys.stderr)
 
-
 class Sdist(SetuptoolsSdist):
+    """
+    Exclude the package data from the sdist
+    """
     def make_distribution(self):
         # Exclude the binaries
-        self.filelist.exclude_pattern('mamele/mamele_src/mame64')
-        self.filelist.exclude_pattern('mamele_src/learning_environment/example_agents/pythonbinding.so')
+        for filename in package_data:
+            self.filelist.exclude_pattern(os.path.join('mamele', filename))
         SetuptoolsSdist.make_distribution(self)
 
+
 setup(name='mamele',
-      version='0.4.1.183',
+      version='4.2.183',
       description='Python bindings to MAME games',
       long_description='This is a Python wrapper around mamele, a framework for putting computer programs as players of games supported by MAME',
       url='https://github.com/alito/mamele_pippable',
-      download_url='https://organicrobot.com/mamele/mamele-0.4.1.183.tar.bz2',
+      download_url='https://github.com/alito/mamele_pippable',
       author='Alejandro Dubrovsky',
       author_email='alito@organicrobot.com',
       license='GPL-v2,BSD-3',
