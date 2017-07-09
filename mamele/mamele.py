@@ -31,7 +31,7 @@ class Mamele(object):
 
         # we'll initialise these once we know what we are dealing with
         self.score = None
-        self.latest_image_as_string = None
+        self.latest_image_as_bytes = None
         self.previous_score = self.score = 0
         self.images_size_in_bytes = 0
         self.action_spaces = None
@@ -42,7 +42,7 @@ class Mamele(object):
         self.buttons_used = None
 
         self.action_to_description = {}
-        self.nothing_pressed = '0' * len(self.SwitchesOrder) # template for the switches to send, all unpressed
+        self.nothing_pressed = b'0' * len(self.SwitchesOrder) # template for the switches to send, all unpressed
 
         self.mamele_connection = Socket()
         socket_path = self.mamele_connection.start_server()
@@ -79,22 +79,22 @@ class Mamele(object):
             # should do for now
 
             command = self.mamele_connection.receive_bytes(4).lower()
-            if command == 'size':
+            if command == b'size':
                 # we have the size of the space. Initialise buffer and observation space
-                size_description = self.mamele_connection.receive_until_character('\n')
+                size_description = self.mamele_connection.receive_until_character(b'\n')
                 self._initialise_screen(size_description.strip())
-            elif command == 'used':
+            elif command == b'used':
                 # get the switches that are used
-                switches_used_description = self.mamele_connection.receive_until_character('\n')
+                switches_used_description = self.mamele_connection.receive_until_character(b'\n')
                 self._initialise_action_space(switches_used_description.strip())
-            elif command == 'quit':
+            elif command == b'quit':
                 logging.info("Got a quit from the environment")
                 self.expected_quit()
-            elif command == 'updt':
+            elif command == b'updt':
                 # combo update of score and image
-                score_description = self.mamele_connection.receive_until_character('\n')
-                game_over_description = self.mamele_connection.receive_until_character('\n')
-                self.latest_image_as_string = self.mamele_connection.receive_bytes(self.images_size_in_bytes)
+                score_description = self.mamele_connection.receive_until_character(b'\n')
+                game_over_description = self.mamele_connection.receive_until_character(b'\n')
+                self.latest_image_as_bytes = self.mamele_connection.receive_bytes(self.images_size_in_bytes)
                 if not self.resetting:
                     # ignore score and game over status while we are resetting
                     self._set_score(score_description.strip())
@@ -118,7 +118,7 @@ class Mamele(object):
 
     def get_screen_rgb(self):
         # we get the data as BGRA. Convert it to RGB in numpy
-        image = Image.frombuffer("RGBA",(self.width, self.height), self.latest_image_as_string,'raw', "RGBA", 0, 1)
+        image = Image.frombytes("RGBA",(self.width, self.height), self.latest_image_as_bytes,'raw', "RGBA", 0, 1)
         arrayed = numpy.asarray(image)
         return arrayed[:, :, [2, 1, 0]]
 
@@ -132,7 +132,7 @@ class Mamele(object):
             # make sure it's waiting for us
             self.receive_message()
         if not self.game_over:
-            self.send_message('rest')
+            self.send_message(b'rest')
             self.skip(self.ResetFrames)
         self.insert_coin()
         self.skip(self.PressFrames)
@@ -151,7 +151,7 @@ class Mamele(object):
         """
         The `action` parameter describes what we do in each action space
         """
-        self.send_message("inpt %s\n" % self.action_to_description[tuple(action)])
+        self.send_message(b"inpt %s\n" % self.action_to_description[tuple(action)])
         self.receive_message()
         return self.score - self.previous_score
 
@@ -168,32 +168,32 @@ class Mamele(object):
 
 
     def quit(self):
-        self.send_message('quit')
+        self.send_message(b'quit')
 
     def insert_coin(self):
-        self.send_message("inpt %s\n" % self.action_to_description['coin'])
+        self.send_message(b"inpt %s\n" % self.action_to_description['coin'])
 
     def start_player1(self):
-        self.send_message("inpt %s\n" % self.action_to_description['player1'])
+        self.send_message(b"inpt %s\n" % self.action_to_description['player1'])
 
     def press_nothing(self):
-        self.send_message("inpt %s\n" % self.nothing_pressed)
+        self.send_message(b"inpt %s\n" % self.nothing_pressed)
 
     def skip(self, frames):
-        self.send_message('skip %d\n' % frames)        
+        self.send_message(b'skip %d\n' % frames)        
 
 
     def _initialise_screen(self, description):
         # we get sent something like 400x300 (widthxheight)
 
-        parts = description.split('x')
+        parts = description.split(b'x')
         if len(parts) != 2:
             raise self.CommunicationError("Didn't get a size in width x height format")
 
         try:
             self.width = int(parts[0])
             self.height = int(parts[1])
-            logging.info("Screen size: %sx%s" % (self.width, self.height))
+            logging.info("Screen size: %dx%d" % (self.width, self.height))
         except ValueError as error:
             raise self.CommunicationError("Either width or height weren't integers")
 
@@ -211,8 +211,8 @@ class Mamele(object):
         spaces = defaultdict(lambda: list(['noop']))
 
         self.buttons_used = []
-        for index, (used, switch_name) in enumerate(zip(switches_used_description, self.SwitchesOrder)):
-            if used == '1':
+        for index, (used, switch_name) in enumerate(zip(switches_used_description.decode('ascii'), self.SwitchesOrder)):
+            if used == u'1':
                 if index in self.HorizontalDirectionRange:
                     spaces['horizontal'].append(switch_name)
                 elif index in self.VerticalDirectionRange:
@@ -246,8 +246,8 @@ class Mamele(object):
 
         coin_button = SwitchIndex['coin']
         player1_button = SwitchIndex['player1']
-        self.action_to_description['coin'] = ''.join('0' if index != coin_button else '1' for index in range(number_of_switches))
-        self.action_to_description['player1'] = ''.join('0' if index != player1_button else '1' for index in range(number_of_switches))
+        self.action_to_description['coin'] = b''.join(b'0' if index != coin_button else b'1' for index in range(number_of_switches))
+        self.action_to_description['player1'] = b''.join(b'0' if index != player1_button else b'1' for index in range(number_of_switches))
 
 
         # iterate over all our action spaces and generate a description for each one
@@ -260,7 +260,7 @@ class Mamele(object):
                     switches.add(SwitchIndex[component])
 
             # create the description
-            self.action_to_description[action] = ''.join('1' if index in switches else '0' for index in range(number_of_switches))
+            self.action_to_description[action] = b''.join(b'1' if index in switches else b'0' for index in range(number_of_switches))
 
 
     def _set_score(self, description):
@@ -269,7 +269,7 @@ class Mamele(object):
 
     def _set_game_over(self, description):
         # we only set game over to True here
-        if description == '1':
+        if description == b'1':
             self.game_over = True
 
 
@@ -284,7 +284,7 @@ class Mamele(object):
         roms_directory = os.path.join(os.path.expanduser("~"), '.le', 'roms')
         if not os.path.isdir(roms_directory):
             raise ValueError("'%s' is not a directory. Put your roms there" % roms_directory)            
-        python_bindings = os.path.join(this_directory, 'mamele_real', 'learning_environment', 'example_agents', 'pythonbinding.so')
+        python_bindings = os.path.join(this_directory, 'mamele_real', 'learning_environment', 'example_agents', 'python%sbinding.so' % sys.version_info.major)
 
         command = [mame_binary, game, '-nowriteconfig', '-noreadconfig', '-window'] 
         if not self.watch:

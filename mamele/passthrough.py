@@ -85,18 +85,14 @@ class PassthroughController(object):
         self.buttons_used = buttons_used
 
         # send dimensions
-        self.controller_connection.send("size %sx%s\n" % (self.width, self.height))
-        self.controller_connection.send("used %s\n" % (''.join('1' if used else '0' for used in self.buttons_used)))
+        self.controller_connection.send(b"size %dx%d\n" % (self.width, self.height))
+        self.controller_connection.send(b"used %s\n" % (b''.join(b'1' if used else b'0' for used in self.buttons_used)))
 
         
     def update(self, score, game_over, video_frame):
         """
         This will be called with a score if available (otherwise zero), and the video_frame
         
-        The frame can be converted to a nice PIL image with something like
-
-        frame = PIL.Image.frombuffer("RGBA",(self.width, self.height),video_frame,'raw', ("BGRA",0,1))
-
         Return the number of frames you want skipped before being called again.  Due to conversions, it's much faster
         to return a positive number here than to keep an internal count on when to react
         """        
@@ -107,7 +103,7 @@ class PassthroughController(object):
         frames_to_skip = self.frames_to_skip - 1
         if frames_to_skip < 0:
             frames_to_skip = 0
-            self.controller_connection.send('updt %d\n%d\n%s' % (score, game_over, video_frame))
+            self.controller_connection.send(b'updt %d\n%d\n' % (score, game_over) + video_frame.tobytes())
             self.receive_message()
         else:
             self.frames_to_skip = 0
@@ -146,7 +142,7 @@ class PassthroughController(object):
 
         # tell Gym that we are shutting down
 
-        self.controller_connection.send("quit")
+        self.controller_connection.send(b"quit")
         self.controller_connection.destroy()
     
     
@@ -156,17 +152,17 @@ class PassthroughController(object):
             # should do for now
 
             command = self.controller_connection.receive_bytes(4).lower()
-            if command == 'inpt':
+            if command == b'inpt':
                 # we have the size of the space. Initialise buffer and observation space
-                input_description = self.controller_connection.receive_until_character('\n').strip()
+                input_description = self.controller_connection.receive_until_character(b'\n').strip()
                 self._set_input(input_description)
-            elif command == 'rest':
+            elif command == b'rest':
                 # reset
                 self.we_should_reset = True
-            elif command == 'skip':
-                skip_description = self.controller_connection.receive_until_character('\n').strip()
+            elif command == b'skip':
+                skip_description = self.controller_connection.receive_until_character(b'\n').strip()
                 self.frames_to_skip = int(skip_description.strip())
-            elif command == 'quit':
+            elif command == b'quit':
                 logging.info("We've been told to quit")
                 self.controller_connection.destroy()
                 sys.exit(0)                
@@ -185,8 +181,8 @@ class PassthroughController(object):
         if not len(description) == 12:
             raise self.CommunicationError("input should pass through the state of the 12 buttons. We saw '%s' of length '%s'" % (description, len(description)))
 
-        for index, state in enumerate(description):
-            if state == '1':
+        for index, state in enumerate(description.decode('ascii')):
+            if state == u'1':
                 self.button_order[index].press()
             else:
                 self.button_order[index].release()

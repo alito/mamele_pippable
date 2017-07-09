@@ -10,7 +10,7 @@ class Socket(object):
 
     def __init__(self):
         # leftover from previous
-        self._leftover_message = ''
+        self._leftover_message = b''
 
         # mostly from https://docs.python.org/2/howto/sockets.html
         self.connection = None
@@ -70,7 +70,7 @@ class Socket(object):
                 logging.error("issue receiving: %s" % error)
 
 
-        return ''.join(parts)
+        return b''.join(parts)
 
     def receive_bytes(self, count):
         received = len(self._leftover_message)
@@ -97,7 +97,7 @@ class Socket(object):
                 logging.error("issue receiving: %s" % error)
 
 
-        return ''.join(parts)
+        return b''.join(parts)
 
 
     def send(self, message):

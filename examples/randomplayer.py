@@ -8,6 +8,7 @@ from __future__ import print_function, absolute_import, division, unicode_litera
 
 import sys, os
 import random
+import logging
 
 import mamele
 
@@ -28,6 +29,8 @@ def main(args):
 
     parameters = parser.parse_args(args)
 
+    logging.basicConfig(level=logging.INFO)
+
     game = mamele.Mamele(parameters.game[0], watch=True)
 
     action_sets = game.get_minimal_action_set()
@@ -36,7 +39,6 @@ def main(args):
     change_probability = 1. / ChangeActionPeriod
     action = [random.choice(action_set[1]) for action_set in action_sets]
 
-    
     frame_count = 0
     while True:
         if game.is_game_over():
