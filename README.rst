@@ -2,6 +2,15 @@
 mamele
 ======
 
+
+To install
+----------
+
+`pip install -v mamele`
+
+What is it?
+-----------
+
 This is a thin Python wrapper around mamele https://github.com/alito/mamele
 It lets you treat mamele as a Python module instead of calling mame manually and dealing with all the path
 and subprocess issues. Balancing out this convenience, this method of calling mamele is much slower
